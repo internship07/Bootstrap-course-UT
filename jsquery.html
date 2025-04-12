@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color:rgb(4, 58, 58);
+            background-color: #f0a7e6;
+            
+        }
+        .todo-container {
+            max-width: 500px;
+            margin: auto;
+        }
+        .todo-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .todo-input {
+            width: calc(100% - 50px);
+            padding: 10px;
+            margin-right: 10px;
+        }
+        .todo-list {
+            list-style: none;
+            padding: 0;
+        }
+        .todo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .todo-item.completed {
+            text-decoration: line-through;
+            color: gray;
+        }
+        .todo-actions i {
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        .todo-actions i:hover {
+            color: #1d19f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="todo-container">
+        <div class="todo-header">
+            <h1>To-Do List</h1>
+            <input type="text" id="new-task" class="todo-input" placeholder="Add a new task">
+            <button id="add-task">Add</button>
+        </div>
+        <ul class="todo-list" id="todo-list"></ul>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Load tasks from the server
+            function loadTasks() {
+                $.ajax({
+                    url: 'https://jsonplaceholder.typicode.com/todos?_limit=5', // Replace with your server endpoint
+                    method: 'GET',
+                    success: function (tasks) {
+                        tasks.forEach(task => {
+                            addTaskToDOM(task.title, task.completed);
+                        });
+                    },
+                    error: function () {
+                        alert('Failed to load tasks.');
+                    }
+                });
+            }
+
+            // Add a task to the DOM
+            function addTaskToDOM(taskText, completed = false) {
+                const taskItem = $(`
+                    <li class="todo-item ${completed ? 'completed' : ''}">
+                        <span class="task-text">${taskText}</span>
+                        <div class="todo-actions">
+                            <i class="fas fa-edit edit-task"></i>
+                            <i class="fas fa-check complete-task"></i>
+                            <i class="fas fa-trash delete-task"></i>
+                        </div>
+                    </li>
+                `);
+
+                $('#todo-list').append(taskItem.hide().fadeIn());
+            }
+
+            // Add a new task
+            $('#add-task').click(function () {
+                const taskText = $('#new-task').val().trim();
+                if (taskText) {
+                    addTaskToDOM(taskText);
+                    $('#new-task').val('');
+                }
+            });
+
+            // Mark a task as completed
+            $('#todo-list').on('click', '.complete-task', function () {
+                $(this).closest('.todo-item').toggleClass('completed');
+            });
+
+            // Edit a task
+            $('#todo-list').on('click', '.edit-task', function () {
+                const taskItem = $(this).closest('.todo-item');
+                const taskText = taskItem.find('.task-text').text();
+                const newTaskText = prompt('Edit task:', taskText);
+                if (newTaskText) {
+                    taskItem.find('.task-text').text(newTaskText);
+                }
+            });
+
+            // Delete a task
+            $('#todo-list').on('click', '.delete-task', function () {
+                $(this).closest('.todo-item').fadeOut(function () {
+                    $(this).remove();
+                });
+            });
+
+            // Save tasks to the server (mocked)
+            function saveTasks() {
+                const tasks = [];
+                $('#todo-list .todo-item').each(function () {
+                    const taskText = $(this).find('.task-text').text();
+                    const completed = $(this).hasClass('completed');
+                    tasks.push({ title: taskText, completed });
+                });
+
+                $.ajax({
+                    url: 'https://jsonplaceholder.typicode.com/posts', // Replace with your server endpoint
+                    method: 'POST',
+                    data: JSON.stringify(tasks),
+                    contentType: 'application/json',
+                    success: function () {
+                        alert('Tasks saved successfully!');
+                    },
+                    error: function () {
+                        alert('Failed to save tasks.');
+                    }
+                });
+            }
+
+            // Save tasks on page unload
+            $(window).on('beforeunload', saveTasks);
+
+            // Load tasks on page load
+            loadTasks();
+        });
+    </script>
+</body>
+</html>
